@@ -172,7 +172,7 @@ class MulticlassMetricsReWrite @Since("1.1.0") (predictionAndLabels: RDD[(Double
   @Since("1.1.0")
   lazy val weightedRecall: Double = labelCountByClass.map { case (category, count) =>
 //    recall(category) * count.toDouble / labelCount
-    (if (category == 1) recall(category)* count.toDouble / labelCount else 0)
+    if (category == 1) recall(category) else 0
   }.sum
 
   /**
@@ -181,7 +181,7 @@ class MulticlassMetricsReWrite @Since("1.1.0") (predictionAndLabels: RDD[(Double
   @Since("1.1.0")
   lazy val weightedPrecision: Double = labelCountByClass.map { case (category, count) =>
 //    precision(category) * count.toDouble / labelCount
-    (if (category == 1) precision(category)* count.toDouble / labelCount else 0)
+    if (category == 1) precision(category) else 0
   }.sum
 
   /**

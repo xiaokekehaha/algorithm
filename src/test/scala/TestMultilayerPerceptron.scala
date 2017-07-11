@@ -7,6 +7,10 @@ import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.evaluationre.MulticlassClassificationEvaluatorReWrite
 import org.apache.spark.ml.evaluationre.MulticlassClassificationEvaluatorReWrite
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.ml.tuningre.CrossValidatorReWrite
+import org.apache.spark.mllib.evaluationre.MulticlassMetricsReWrite
+
+import scala.collection.Map
 
 
 /**
@@ -44,29 +48,72 @@ class TestMultilayerPerceptron extends Session{
     val paramGrid = new ParamGridBuilder()
       .addGrid(trainer.layers,Array{Array[Int](33, 40,37, 2);Array[Int](33, 35,40, 2)})
 //      .addGrid(trainer.solver, Array(1e-6))
-      .addGrid(trainer.maxIter,Array(100,150,200))
-      .addGrid(trainer.blockSize,Array(128,256))
-      .addGrid(trainer.seed,Array(1234L))
+//      .addGrid(trainer.maxIter,Array(100,150,200))
+//      .addGrid(trainer.blockSize,Array(128,256))
+//      .addGrid(trainer.seed,Array(1234L))
       .build()
-    val cv = new CrossValidator()
+    val cv = new CrossValidatorReWrite()
       .setEstimator(pipeline)
-      .setEvaluator(new MulticlassClassificationEvaluator()
+      .setEvaluator(new MulticlassClassificationEvaluatorReWrite()
       .setMetricName("weightedPrecision"))
       .setEstimatorParamMaps(paramGrid)
-      .setNumFolds(6)
+      .setNumFolds(5)
     // train the model
-    val model = cv.fit(data)
+    val model = cv.fit(train)
+
 
     // compute accuracy on the test set
 
-    val dataTest = sparkSession.read.format("libsvm")
-//      .load("C:\\Users\\zhangrb\\Desktop\\data\\split_test_feature.txtac")
-      .load("C:\\Users\\zhangrb\\Desktop\\wenjain\\alive.alive")
+//    val dataTest = sparkSession.read.format("libsvm")
+////      .load("C:\\Users\\zhangrb\\Desktop\\data\\split_test_feature.txtac")
+//      .load("C:\\Users\\zhangrb\\Desktop\\wenjain\\alive.alive")
 //      .take(100)
 
     val result = model.transform(test)
+    result.select("prediction", "label").show(500)
     val predictionAndLabels = result.select("prediction", "label")
-    predictionAndLabels.show(400)
+
+      .rdd.map(x => (x(0).toString.toDouble,x(1).toString.toDouble))
+    println("end")
+//    predictionAndLabels.show(400)
+//    val mul = new MulticlassMetricsReWrite(predictionAndLabels)
+
+    val tpByClass: Map[Double, Int] = predictionAndLabels
+      .map { case (prediction, label) =>
+        (label, if (label == prediction) 1 else 0)
+      }.reduceByKey(_ + _)
+      .collectAsMap()
+//      .foreach(x => println(x))
+    println("end")
+    val fpByClass: Map[Double, Int] =predictionAndLabels
+      .map { case (prediction, label) =>
+        (prediction, if (prediction != label) 1 else 0)
+      }.reduceByKey(_ + _)
+      .collectAsMap()
+//      .foreach(x => println(x))
+
+
+    lazy val labelCountByClass: Map[Double, Long] =
+      predictionAndLabels.values.countByValue()
+    labelCountByClass.foreach(x => println(x))
+    lazy val labelCount: Long =
+      labelCountByClass.values.sum
+
+    def precision(label: Double): Double = {
+      println("label",label)
+      val tp = tpByClass(label)
+      println("tp",tp)
+      val fp = fpByClass.getOrElse(label, 0)
+      println("fp",fp)
+      if (tp + fp == 0) 0 else tp.toDouble / (tp + fp)
+    }
+
+
+    lazy val weightedPrecision: Double = labelCountByClass.map { case (category, count) =>
+//          precision(category) //* count.toDouble / labelCount
+      if (category == 1) precision(category)* count.toDouble / count.toDouble else 0
+    }.sum
+    println("weightedPrecision",weightedPrecision)
 
 //    val evaluatorf1 = new MulticlassClassificationEvaluatorReWrite()
 //      .setMetricName("f1")
@@ -74,21 +121,21 @@ class TestMultilayerPerceptron extends Session{
 //    val evaluatoracc = new MulticlassClassificationEvaluatorReWrite()
 //      .setMetricName("accuracy")
 
-    val evaluatorrecall = new MulticlassClassificationEvaluatorReWrite()
-      .setMetricName("weightedRecall")
+//    val evaluatorrecall = new MulticlassClassificationEvaluatorReWrite()
+//      .setMetricName("weightedRecall")
     val evaluatorpre = new MulticlassClassificationEvaluatorReWrite()
       .setMetricName("weightedPrecision")
 
 
 //    println("Test set f1 = " + evaluatorf1.evaluate(result))
 //    println("Test set accuracy = " + evaluatoracc.evaluate(result))
-    println("Test set weightedRecall = " + evaluatorrecall.evaluate(result))
+//    println("Test set weightedRecall = " + evaluatorrecall.evaluate(result))
     println("Test set weightedPrecision = " + evaluatorpre.evaluate(result))
+//
 
+//    val resultOut = model.transform(dataTest)
 
-    val resultOut = model.transform(dataTest)
-
-//    resultOut.select("prediction", "label")
+//    resultOut.select("prediction", "label").show()
 //      .filter("prediction = 1")
 //      .rdd.coalesce(1).saveAsTextFile("C:\\Users\\zhangrb\\Desktop\\res\\mulac1")
 

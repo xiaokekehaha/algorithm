@@ -13,7 +13,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object Main {
 
   def main(Args: Array[String]) : Unit = {
-
+   /*
     val className = Class.forName("com.safe2345.graph.ExamplePropertyGraph")
 //  get names
 //  Class.forName(classOf[ExamplePropertyGraph].getName)
@@ -21,6 +21,10 @@ object Main {
     lazy val instance = className.newInstance()
 
     instance
+*/
+
+
+
 
   }
 
