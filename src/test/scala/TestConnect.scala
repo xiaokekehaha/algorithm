@@ -349,7 +349,17 @@ class TestConnect {
 
   }
 
+  @Test
+  def dataType(): Unit = {
+    var m= 0
+    val dataSet = sparkSession.read.format("libsvm")
+      .load("C:\\Users\\zhangrb\\Desktop\\test1.test").rdd.map{
+      m = m+1
+      x => (m,x)
+    }
 
+    dataSet.foreach(x => println(x))
+  }
 
 
 }
