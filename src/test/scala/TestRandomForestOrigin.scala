@@ -19,10 +19,10 @@ class TestRandomForestOrigin extends Session{
 
     // Load and parse the data file, converting it to a DataFrame.
     val dataOrigin = sparkSession.read.format("libsvm")
-      .load("C:\\Users\\zhangrb\\Desktop\\foo.finish")
+      .load("C:\\Users\\zhangrb\\Desktop\\data\\first_test_user.first_test_user")
 
     val dataSet = sparkSession.read.format("libsvm")
-      .load("C:\\Users\\zhangrb\\Desktop\\test1.test")
+      .load("C:\\Users\\zhangrb\\Desktop\\test.txt")
 
     val scaler = new StandardScaler()
       .setInputCol("features")
@@ -71,8 +71,8 @@ class TestRandomForestOrigin extends Session{
       .setStages(Array(labelIndexer, featureIndexer, rf, labelConverter))
 
     val paramGrid = new ParamGridBuilder()
-      .addGrid(rf.maxBins, Array(50, 34, 100))//
-      .addGrid(rf.numTrees, Array(3, 5, 6, 7, 8, 10)) //
+      .addGrid(rf.maxBins, Array(50, 34, 100))
+      .addGrid(rf.numTrees, Array(3, 5, 6, 7, 8, 10))
       .addGrid(rf.maxDepth, Array(3, 4, 5, 6, 9))
       .build()
 
